@@ -172,6 +172,15 @@
       <input type="text" name="nome" placeholder="Seu nome" style="margin-bottom:12px">
       <input type="text" name="especialidade" placeholder="Especialidade (ex.: Endocrinologia, Ortodontia)">
     </div>
+
+    <div class="q">
+      <div class="label">Você atende em algum hospital, consultório ou ambos?</div>
+      <div class="choices" data-radio="local_atendimento">
+        <label class="choice" data-val="hospital"><span class="dot"></span>Hospital</label>
+        <label class="choice" data-val="consultorio"><span class="dot"></span>Consultório</label>
+        <label class="choice" data-val="ambos"><span class="dot"></span>Ambos</label>
+      </div>
+    </div>
   </section>
 
   <!-- ===== STEP 1 — VISÃO GERAL ===== -->
@@ -333,12 +342,13 @@
 
   const JOURNEY = [
     ["acesso","🔑","Acesso e login"],
-    ["paciente","🧑","Identificação do paciente"],
+    ["paciente","🧑","Cadastro de paciente"],
     ["medicamento","💊","Busca de medicamento e posologia"],
     ["exames","🧪","Prescrição de exames"],
-    ["controlado","📋","Receituário controlado"],
+    ["documentos","📋","Prescrição de atestado, encaminhamento e relatórios"],
     ["assinatura","✍️","Assinatura digital"],
-    ["envio","📲","Envio e entrega ao paciente"]
+    ["envio","📲","Envio e entrega ao paciente"],
+    ["uso","✅","Uso da prescrição pelo paciente"]
   ];
 
   const SAT = [

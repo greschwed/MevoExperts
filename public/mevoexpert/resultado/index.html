@@ -178,6 +178,9 @@
     <div class="filters" id="filters">
       <span class="fl-label">Recortar por</span>
     </div>
+    <div class="filters" id="localFilters">
+      <span class="fl-label">Atende em</span>
+    </div>
     <div class="filters">
       <span class="fl-label">Ações</span>
       <button class="pill action" id="btnRefresh" type="button">↻ Atualizar</button>
@@ -342,19 +345,26 @@ const db = getFirestore(app);
 
 const STAGES = [
   {id:"acesso",      label:"Acesso e login"},
-  {id:"paciente",    label:"Identificação do paciente"},
+  {id:"paciente",    label:"Cadastro de paciente"},
   {id:"medicamento", label:"Medicamento e posologia"},
   {id:"exames",      label:"Prescrição de exames"},
-  {id:"controlado",  label:"Receituário controlado"},
+  {id:"documentos",  label:"Atestado, encaminhamento e relatórios"},
   {id:"assinatura",  label:"Assinatura digital"},
-  {id:"envio",       label:"Envio ao paciente"}
+  {id:"envio",       label:"Envio ao paciente"},
+  {id:"uso",         label:"Uso da prescrição pelo paciente"}
 ];
 const stLabel={}; STAGES.forEach(s=>{stLabel[s.id]=s.label});
-// aceita tanto o id quanto o rótulo antigo salvo em respostas legadas
+// aceita id novo, id antigo ou rótulo salvo em respostas legadas
 const labelToId={}; STAGES.forEach(s=>{labelToId[s.label]=s.id});
 labelToId["Busca de medicamento e posologia"]="medicamento";
 labelToId["Envio e entrega ao paciente"]="envio";
+labelToId["Identificação do paciente"]="paciente";
+labelToId["Receituário controlado"]="documentos";
+labelToId["controlado"]="documentos";
+labelToId["Prescrição de atestado, encaminhamento e relatórios"]="documentos";
+labelToId["Uso da prescrição pelo paciente"]="uso";
 function stageId(v){ return stLabel[v] ? v : (labelToId[v] || v); }
+function shortLabel(l){ return l.split(" ")[0].replace(/,$/,""); }
 
 /* ---------- gerador de amostra determinístico (fallback de demonstração) ---------- */
 function lcg(seed){return function(){seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296}}
@@ -362,12 +372,12 @@ function sample(){
   var r=lcg(20260711), pick=function(a){return a[Math.floor(r()*a.length)]};
   var esp=["Endocrinologia","Clínica Geral","Ortodontia","Dermatologia","Pediatria","Cardiologia","Ginecologia","Odontologia"];
   var pals=["prático","rápido","confuso","seguro","burocrático","intuitivo","lento","essencial","travado","confiável"];
-  var base={acesso:4.3,paciente:4.0,medicamento:2.6,exames:3.1,controlado:2.3,assinatura:3.4,envio:4.1};
+  var base={acesso:4.3,paciente:4.0,medicamento:2.6,exames:3.1,documentos:2.3,assinatura:3.4,envio:4.1,uso:3.8};
   var desejos=["Sugerir posologia","Checar interações","Resumir histórico","Autopreencher dados","Sugerir exames","Revisar receita"];
   var receios=["Decisão clínica","Responsabilidade legal","Privacidade do paciente","Erro sem revisão","Perda de autonomia"];
   var faltas=["Integração com prontuário","App melhor no celular","Busca de medicamento mais rápida","Histórico do paciente visível","Modelos mais flexíveis","Menos cliques no controlado","Assinatura mais simples"];
-  var likesByStage={acesso:["Login rápido","Acesso fácil"],paciente:["Cadastro simples"],medicamento:["Base ampla"],exames:["Prático"],controlado:["Cumpre a norma"],assinatura:["Válida juridicamente"],envio:["Chega no WhatsApp"]};
-  var painsByStage={acesso:["Cai a sessão"],paciente:["Dado repetido"],medicamento:["Busca ruim","Posologia manual","Muitos cliques"],exames:["Não acha o exame"],controlado:["Regras confusas","Burocrático"],assinatura:["Certificado chato"],envio:["Paciente não abre"]};
+  var likesByStage={acesso:["Login rápido","Acesso fácil"],paciente:["Cadastro simples"],medicamento:["Base ampla"],exames:["Prático"],documentos:["Modelos prontos"],assinatura:["Válida juridicamente"],envio:["Chega no WhatsApp"],uso:["Paciente resolve sozinho"]};
+  var painsByStage={acesso:["Cai a sessão"],paciente:["Dado repetido"],medicamento:["Busca ruim","Posologia manual","Muitos cliques"],exames:["Não acha o exame"],documentos:["Texto do zero","Burocrático"],assinatura:["Certificado chato"],envio:["Paciente não abre"],uso:["Paciente não entende","Link expira"]};
   var out=[];
   for(var i=0;i<26;i++){
     var jornada={};
@@ -384,6 +394,7 @@ function sample(){
     out.push({
       nome:"Dr(a). "+String.fromCharCode(65+i%26)+".",
       especialidade:pick(esp),
+      local:pick(["hospital","consultorio","consultorio","ambos","ambos"]),
       nps:nps,
       palavra:pick(pals),
       jornada:jornada,
@@ -441,14 +452,17 @@ function adapt(docSnap){
   const d=docSnap.data()||{};
   const r=d.respostas||{};
   const j={};
+  const jd=d.jornada||{};
   STAGES.forEach(s=>{
-    const src=(d.jornada||{})[s.id]||{};
+    // respostas antigas guardavam a etapa de documentos sob a chave "controlado"
+    const src=jd[s.id]||(s.id==="documentos"?jd["controlado"]:null)||{};
     j[s.id]={sat:src.satisfacao||0,gosta:src.gosta||"",trava:src.trava||""};
   });
   return {
     sessaoId:d.sessaoId||"",
     sessaoNome:d.sessaoNome||"",
     nome:r.nome||"",
+    local:r.local_atendimento||"",
     especialidade:(r.especialidade||"").trim()||"Não informada",
     nps:(typeof r.nps==="number")?r.nps:null,
     palavra:r.palavra||"",
@@ -604,7 +618,7 @@ function drawMap(d){
     var cx=x(p.sat),cy=y(p.demanda),rad=8+p.vol*2.4;
     var op=.35+p.ia/100*.55;
     s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+rad+'" fill="rgba(168,85,247,'+op+')" stroke="var(--magenta)" stroke-width="1.5"/>';
-    labels.push({x:cx,y:cy-rad-6,t:p.label.split(" ")[0]});
+    labels.push({x:cx,y:cy-rad-6,t:shortLabel(p.label)});
   });
   // rótulos que colidem são empilhados um acima do outro
   labels.sort(function(a,b){return a.y-b.y});
@@ -648,7 +662,7 @@ function drawCurve(stAvg){
   stAvg.forEach(function(p,i){
     s+='<circle cx="'+x(i)+'" cy="'+y(p.avg)+'" r="5" fill="var(--canvas)" stroke="var(--magenta)" stroke-width="2.5"/>';
     s+='<text x="'+x(i)+'" y="'+(y(p.avg)-14)+'" fill="var(--ink)" font-size="11" text-anchor="middle">'+p.avg.toFixed(1)+'</text>';
-    var w=p.label.split(" ")[0];
+    var w=shortLabel(p.label);
     s+='<text x="'+x(i)+'" y="'+(H-pad.b+20)+'" fill="var(--soft)" font-size="10" text-anchor="middle">'+esc(w)+'</text>';
   });
   s+='</svg>';
@@ -688,7 +702,7 @@ function drawBacklog(worst,score,iaTop,iaCount,N,gap,difSim,indSim,histP,modP){
   var items=[];
   items.push({pr:"alta",tag:"pr-alta",t:"Refazer "+worst.label.toLowerCase(),
     d:"Menor satisfação da jornada ("+worst.avg.toFixed(1)+"/5) e topo do ranking de prioridade. É o ponto de maior alívio percebido.",
-    link:worst.id==="medicamento"?"↳ MEVO-5069 · Posologia estruturada":worst.id==="controlado"?"↳ MEVO-5071 · Receituário controlado":""});
+    link:worst.id==="medicamento"?"↳ MEVO-5069 · Posologia estruturada":worst.id==="documentos"?"↳ Documentos clínicos · atestado, encaminhamento e relatórios":""});
   items.push({pr:"alta",tag:"pr-alta",t:"IA em "+(stLabel[iaTop]||iaTop).toLowerCase(),
     d:pct(iaCount[iaTop]||0,N)+"% pediram IA justamente aqui. Comece pela dor mais votada, com o médico sempre revisando — respeitando os guarda-corpos citados.",
     link:"↳ IA embarcada · fase 1"});
@@ -724,24 +738,36 @@ function buildSessionPills(){
   });
 }
 
-/* ---------- filtros por especialidade ---------- */
+/* ---------- filtros por especialidade e local de atendimento ---------- */
+var filtroEsp=null, filtroLocal=null;
+var LOCAIS={hospital:"Hospital",consultorio:"Consultório",ambos:"Ambos"};
+function aplicarFiltros(){
+  renderAll(BASE.filter(function(d){
+    return (filtroEsp===null||d.especialidade===filtroEsp)
+        && (filtroLocal===null||d.local===filtroLocal);
+  }));
+}
 function buildFilters(base){
-  var esps=Object.keys(countBy(base,function(d){return d.especialidade})).sort();
-  var box=$("#filters");
-  box.querySelectorAll(".pill").forEach(function(p){p.remove()});
-  function mk(label,val){
+  filtroEsp=null; filtroLocal=null;
+  var espBox=$("#filters"), locBox=$("#localFilters");
+  espBox.querySelectorAll(".pill").forEach(function(p){p.remove()});
+  locBox.querySelectorAll(".pill").forEach(function(p){p.remove()});
+  function mk(box,label,val,setter){
     var b=document.createElement("button");
     b.type="button";
     b.className="pill"+(val===null?" on":"");b.textContent=label;
     b.onclick=function(){
       box.querySelectorAll(".pill").forEach(function(p){p.classList.remove("on")});b.classList.add("on");
-      renderAll(val===null?base:base.filter(function(d){return d.especialidade===val}));
+      setter(val); aplicarFiltros();
     };
     box.appendChild(b);
   }
-  mk("Todas",null);
-  esps.slice(0,8).forEach(function(e){mk(e,e)});
+  var esps=Object.keys(countBy(base,function(d){return d.especialidade})).sort();
+  mk(espBox,"Todas",null,function(v){filtroEsp=v});
+  esps.slice(0,8).forEach(function(e){mk(espBox,e,e,function(v){filtroEsp=v})});
   $("#mEsp").textContent=esps.length;
+  mk(locBox,"Todos",null,function(v){filtroLocal=v});
+  Object.keys(LOCAIS).forEach(function(k){mk(locBox,LOCAIS[k],k,function(v){filtroLocal=v})});
 }
 
 /* ---------- aplica a sessão selecionada ---------- */
@@ -752,7 +778,7 @@ function applySession(){
   $("#demoNote").classList.toggle("show",demo);
   $("#emptyNote").classList.toggle("show",!demo&&mine.length===0);
   buildFilters(BASE);
-  renderAll(BASE);
+  aplicarFiltros();
 }
 
 /* ---------- refresh ---------- */

@@ -71,13 +71,18 @@ respostas/{autoId} = {
   sessaoNome: "Mevo Expert",           // denormalizado p/ leitura simples
   pesquisa: "Mevo Experts — Receita Digital",
   criadaEm: serverTimestamp(),
-  respostas: { nome, especialidade, nps, palavra, prioridade,
-               renovar, renovar_obs, shop_dif, shop_ind, shop_obs,
+  respostas: { nome, especialidade, local_atendimento, nps, palavra,
+               prioridade, renovar, renovar_obs, shop_dif, shop_ind, shop_obs,
                ia_familiar, ia_etapas[], ia_desejo, ia_receio,
                falta, livre },
   jornada: { acesso: {etapa, satisfacao, gosta, trava}, paciente: {...},
-             medicamento: {...}, exames: {...}, controlado: {...},
-             assinatura: {...}, envio: {...} }
+             medicamento: {...}, exames: {...}, documentos: {...},
+             assinatura: {...}, envio: {...}, uso: {...} }
+  // etapas da jornada: Acesso e login · Cadastro de paciente ·
+  // Busca de medicamento e posologia · Prescrição de exames ·
+  // Prescrição de atestado, encaminhamento e relatórios ·
+  // Assinatura digital · Envio e entrega ao paciente ·
+  // Uso da prescrição pelo paciente
 }
 ```
 
