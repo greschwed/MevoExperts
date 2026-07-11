@@ -183,7 +183,8 @@
       <button class="pill action" id="btnRefresh" type="button">↻ Atualizar</button>
       <button class="pill action" id="btnNovaSessao" type="button">+ Nova Sessão</button>
     </div>
-    <div class="demo-note" id="demoNote"><b>Sem respostas nesta sessão ainda.</b> Exibindo dados de demonstração — assim que as primeiras respostas chegarem, toque em ↻ Atualizar.</div>
+    <div class="demo-note" id="demoNote"><b>Sessão DEMO.</b> Dados de demonstração gerados localmente para apresentar o painel — nenhuma resposta real entra aqui.</div>
+    <div class="demo-note" id="emptyNote"><b>Sem respostas nesta sessão ainda.</b> Assim que as primeiras respostas chegarem, toque em ↻ Atualizar.</div>
   </header>
 
   <!-- KPIs -->
@@ -689,10 +690,13 @@ function drawBacklog(worst,score,iaTop,iaCount,N,gap,difSim,indSim,histP,modP){
 }
 
 /* ---------- sessões (pills) ---------- */
+// sessão virtual só do painel: mostra os dados de demonstração,
+// não existe no Firestore e não aparece no seletor da pesquisa
+var SESSAO_DEMO={id:"__demo__",nome:"DEMO",demo:true};
 function buildSessionPills(){
   var box=$("#sessFilters");
   box.querySelectorAll(".pill").forEach(function(p){p.remove()});
-  SESSOES.forEach(function(s){
+  SESSOES.concat([SESSAO_DEMO]).forEach(function(s){
     var b=document.createElement("button");
     b.type="button";
     b.className="pill"+(sessaoAtual&&sessaoAtual.id===s.id?" on":"");
@@ -724,10 +728,11 @@ function buildFilters(base){
 
 /* ---------- aplica a sessão selecionada ---------- */
 function applySession(){
-  var mine=sessaoAtual?ALL_RAW.filter(function(d){return d.sessaoId===sessaoAtual.id}):ALL_RAW;
-  var demo=mine.length===0;
-  BASE=demo?sample():mine;
+  var demo=!!(sessaoAtual&&sessaoAtual.demo);
+  var mine=demo?sample():(sessaoAtual?ALL_RAW.filter(function(d){return d.sessaoId===sessaoAtual.id}):ALL_RAW);
+  BASE=mine;
   $("#demoNote").classList.toggle("show",demo);
+  $("#emptyNote").classList.toggle("show",!demo&&mine.length===0);
   buildFilters(BASE);
   renderAll(BASE);
 }
@@ -743,13 +748,14 @@ async function refresh(){
   try{
     await fetchTudo();
     // mantém a sessão atual se ainda existir; senão volta à padrão
-    if(sessaoAtual) sessaoAtual=SESSOES.find(function(s){return s.id===sessaoAtual.id})||null;
+    if(sessaoAtual&&!sessaoAtual.demo) sessaoAtual=SESSOES.find(function(s){return s.id===sessaoAtual.id})||null;
     if(!sessaoAtual) sessaoAtual=SESSOES.find(function(s){return s.padrao===true})||SESSOES[0]||null;
     buildSessionPills();
     applySession();
     stampAgora();
   }catch(e){
-    if(ALL_RAW.length===0){ BASE=sample(); buildFilters(BASE); renderAll(BASE); $("#demoNote").classList.add("show"); }
+    // sem conexão com o Firestore: cai na sessão DEMO para o painel não ficar vazio
+    if(ALL_RAW.length===0){ sessaoAtual=SESSAO_DEMO; buildSessionPills(); applySession(); }
   }finally{
     btn.classList.remove("busy");btn.textContent="↻ Atualizar";
   }
