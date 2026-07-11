@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pesquisa Mevo Experts — Receita Digital</title>
+<style>
+  :root{
+    --ink:#1c1230;
+    --ink-soft:#5a4a72;
+    --paper:#faf7fd;
+    --card:#ffffff;
+    --line:#ece3f6;
+    --magenta:#e5007e;
+    --roxo:#6a1b9a;
+    --roxo-deep:#4a1370;
+    --lilac:#f3e9fb;
+    --grad:linear-gradient(115deg,#6a1b9a 0%,#a3199c 55%,#e5007e 100%);
+    --shadow:0 18px 50px -24px rgba(74,19,112,.45);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--paper);color:var(--ink);
+    line-height:1.5;-webkit-font-smoothing:antialiased;
+    padding:0 0 80px;
+  }
+  .progress-wrap{position:sticky;top:0;z-index:50;background:rgba(250,247,253,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .progress-inner{max-width:720px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  .brand{font-weight:800;letter-spacing:-.02em;font-size:15px;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+  .bar{flex:1;height:7px;background:var(--lilac);border-radius:99px;overflow:hidden}
+  .bar>span{display:block;height:100%;width:0;background:var(--grad);border-radius:99px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+  .count{font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .stage{max-width:720px;margin:0 auto;padding:0 24px}
+
+  .hero{padding:64px 0 40px;text-align:left}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--magenta);margin-bottom:22px}
+  .eyebrow::before{content:"";width:26px;height:2px;background:var(--grad);border-radius:2px}
+  .hero h1{font-size:clamp(30px,6vw,46px);line-height:1.05;letter-spacing:-.03em;font-weight:800;margin-bottom:18px}
+  .hero h1 em{font-style:normal;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{font-size:17px;color:var(--ink-soft);max-width:52ch}
+  .hero .meta{margin-top:26px;font-size:14px;color:var(--ink-soft);display:flex;gap:22px;flex-wrap:wrap}
+  .hero .meta b{color:var(--ink)}
+
+  section.step{display:none;animation:rise .45s ease both;padding-bottom:20px}
+  section.step.active{display:block}
+  @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  .sec-head{display:flex;align-items:baseline;gap:14px;margin:8px 0 26px}
+  .sec-num{font-size:13px;font-weight:800;color:#fff;background:var(--grad);border-radius:8px;padding:5px 9px;font-variant-numeric:tabular-nums;line-height:1}
+  .sec-title{font-size:24px;font-weight:800;letter-spacing:-.02em}
+  .sec-sub{font-size:15px;color:var(--ink-soft);margin:-14px 0 26px}
+
+  .q{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 22px 24px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .q .label{font-size:16px;font-weight:650;margin-bottom:4px}
+  .q .hint{font-size:13.5px;color:var(--ink-soft);margin-bottom:16px}
+  .q .label .opt{font-weight:500;color:var(--ink-soft);font-size:13px}
+
+  input[type=text],textarea{
+    width:100%;font:inherit;color:var(--ink);background:var(--paper);
+    border:1.5px solid var(--line);border-radius:11px;padding:13px 15px;transition:border-color .2s,box-shadow .2s;
+  }
+  textarea{resize:vertical;min-height:92px;line-height:1.55}
+  input[type=text]:focus,textarea:focus{outline:none;border-color:var(--magenta);box-shadow:0 0 0 4px rgba(229,0,126,.12);background:#fff}
+  input::placeholder,textarea::placeholder{color:#b6a8c9}
+
+  .scale{display:flex;gap:6px;flex-wrap:wrap}
+  .scale button{
+    flex:1;min-width:42px;aspect-ratio:1;border:1.5px solid var(--line);background:#fff;border-radius:11px;
+    font:inherit;font-weight:700;font-size:15px;color:var(--ink-soft);cursor:pointer;transition:all .15s;
+  }
+  .scale button:hover{border-color:var(--roxo);color:var(--roxo);transform:translateY(-2px)}
+  .scale button.on{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 8px 18px -8px rgba(229,0,126,.6)}
+  .scale-legend{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-soft);margin-top:9px}
+
+  .sat{display:flex;gap:8px}
+  .sat button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:12px 4px 10px;cursor:pointer;font:inherit;transition:all .15s;text-align:center}
+  .sat button .emo{font-size:22px;display:block;line-height:1;margin-bottom:5px;filter:grayscale(.4);opacity:.75;transition:all .15s}
+  .sat button .t{font-size:11.5px;color:var(--ink-soft);font-weight:600}
+  .sat button:hover{border-color:var(--roxo);transform:translateY(-2px)}
+  .sat button.on{border-color:var(--magenta);background:var(--lilac)}
+  .sat button.on .emo{filter:none;opacity:1;transform:scale(1.12)}
+  .sat button.on .t{color:var(--roxo-deep)}
+
+  .choices{display:flex;flex-direction:column;gap:9px}
+  .choice{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:13px 15px;cursor:pointer;transition:all .15s;font-size:15px}
+  .choice:hover{border-color:var(--roxo)}
+  .choice.on{border-color:var(--magenta);background:var(--lilac)}
+  .choice .dot{width:19px;height:19px;border-radius:50%;border:2px solid #cbb8e0;flex-shrink:0;position:relative;transition:all .15s}
+  .choice.on .dot{border-color:var(--magenta)}
+  .choice.on .dot::after{content:"";position:absolute;inset:3px;border-radius:50%;background:var(--grad)}
+  .choice.multi .dot{border-radius:6px}
+  .choice.multi.on .dot::after{border-radius:3px}
+  .sess-loading{font-size:13.5px;color:var(--ink-soft)}
+
+  .journey{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow);background:var(--card)}
+  .journey-top{display:flex;align-items:center;gap:14px;padding:18px 20px;background:linear-gradient(90deg,var(--lilac),#fff)}
+  .journey-ico{width:38px;height:38px;flex-shrink:0;border-radius:10px;background:var(--grad);color:#fff;display:grid;place-items:center;font-size:19px}
+  .journey-top h3{font-size:16.5px;font-weight:750;letter-spacing:-.01em}
+  .journey-top .st{font-size:12.5px;color:var(--ink-soft)}
+  .journey-body{padding:18px 20px 20px;display:grid;gap:16px}
+  .mini-label{font-size:13px;font-weight:650;color:var(--ink-soft);margin-bottom:8px;display:block}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .split .up{--accent:#16a34a}.split .down{--accent:#e5007e}
+  .split .mini-label span{color:var(--accent);font-weight:800}
+
+  .nav{display:flex;justify-content:space-between;gap:14px;margin-top:28px}
+  .btn{font:inherit;font-weight:700;font-size:15px;border-radius:12px;padding:14px 26px;cursor:pointer;border:1.5px solid transparent;transition:all .18s}
+  .btn-ghost{background:#fff;border-color:var(--line);color:var(--ink-soft)}
+  .btn-ghost:hover{border-color:var(--roxo);color:var(--roxo)}
+  .btn-ghost:disabled{opacity:.4;cursor:not-allowed}
+  .btn-next{background:var(--grad);color:#fff;box-shadow:0 12px 26px -12px rgba(229,0,126,.7);margin-left:auto}
+  .btn-next:hover{transform:translateY(-2px);box-shadow:0 16px 32px -12px rgba(229,0,126,.8)}
+  .btn-next:disabled{opacity:.6;cursor:wait;transform:none}
+
+  .save-error{display:none;margin-top:18px;padding:14px 16px;border-radius:12px;background:#fdecf3;border:1px solid rgba(229,0,126,.35);font-size:14px;color:#8e1652}
+  .save-error.show{display:block}
+
+  .dots{display:flex;justify-content:center;gap:7px;margin-top:22px}
+  .dots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:all .3s;cursor:pointer}
+  .dots i.on{background:var(--grad);width:22px;border-radius:99px}
+
+  .done{text-align:center;padding:36px 0}
+  .done .ring{width:82px;height:82px;margin:0 auto 22px;border-radius:50%;background:var(--grad);display:grid;place-items:center;color:#fff;font-size:40px;box-shadow:0 18px 40px -14px rgba(229,0,126,.6);animation:pop .5s cubic-bezier(.2,1.4,.5,1) both}
+  @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+  .done h2{font-size:28px;font-weight:800;letter-spacing:-.02em;margin-bottom:10px}
+  .done p{color:var(--ink-soft);max-width:46ch;margin:0 auto 24px}
+  .done .sess-tag{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--roxo-deep);background:var(--lilac);border:1px solid var(--line);border-radius:99px;padding:8px 16px}
+
+  @media (max-width:560px){
+    .split{grid-template-columns:1fr}
+    .hero{padding:44px 0 30px}
+    .sat button .t{font-size:10.5px}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-wrap">
+  <div class="progress-inner">
+    <span class="brand">Mevo Experts</span>
+    <div class="bar"><span id="barFill"></span></div>
+    <span class="count" id="count">0%</span>
+  </div>
+</div>
+
+<div class="stage">
+  <form id="survey" autocomplete="off">
+
+  <!-- ===== HERO / STEP 0 ===== -->
+  <section class="step active" data-step>
+    <div class="hero">
+      <span class="eyebrow">Encontro Mevo Experts</span>
+      <h1>Sua voz molda a<br><em>Receita Digital</em>.</h1>
+      <p>Você conhece a Mevo por dentro. Esta conversa rápida é para captar, etapa por etapa, o que funciona bem na prescrição, o que trava, e onde a inteligência artificial faria diferença de verdade na sua rotina.</p>
+      <div class="meta">
+        <span><b>~8 min</b> · aberto e sem certo ou errado</span>
+        <span><b>Ao final</b>, é só concluir — suas respostas ficam registradas</span>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="label">Sessão do encontro</div>
+      <div class="hint">Selecione a sessão em que você está participando.</div>
+      <div class="choices" id="sessaoChoices"><span class="sess-loading">Carregando sessões…</span></div>
+    </div>
+
+    <div class="q">
+      <div class="label">Como você prefere ser identificado?</div>
+      <div class="hint">O volume de prescrições a gente já tem na base — aqui só precisamos do seu nome e área.</div>
+      <input type="text" name="nome" placeholder="Seu nome" style="margin-bottom:12px">
+      <input type="text" name="especialidade" placeholder="Especialidade (ex.: Endocrinologia, Ortodontia)">
+    </div>
+  </section>
+
+  <!-- ===== STEP 1 — VISÃO GERAL ===== -->
+  <section class="step" data-step>
+    <div class="sec-head"><span class="sec-num">01</span><span class="sec-title">Visão geral</span></div>
+
+    <div class="q">
+      <div class="label">De 0 a 10, o quanto você recomendaria a Mevo Receita Digital a um colega?</div>
+      <div class="scale" data-scale="nps"></div>
+      <div class="scale-legend"><span>Não recomendaria</span><span>Recomendaria com certeza</span></div>
+    </div>
+
+    <div class="q">
+      <div class="label">Em uma palavra, como é prescrever pela Mevo hoje?</div>
+      <input type="text" name="palavra" placeholder="Ex.: rápido, prático, confuso...">
+    </div>
+  </section>
+
+  <!-- ===== STEP 2 — JORNADA ===== -->
+  <section class="step" data-step>
+    <div class="sec-head"><span class="sec-num">02</span><span class="sec-title">A jornada da prescrição</span></div>
+    <p class="sec-sub">Para cada etapa: um toque na carinha que representa sua experiência e, se quiser, o que mais gosta e o que mais te incomoda. Responda só o que fizer sentido.</p>
+    <div id="journeyMount"></div>
+  </section>
+
+  <!-- ===== STEP 3 — PRIORIZAÇÃO ===== -->
+  <section class="step" data-step>
+    <div class="sec-head"><span class="sec-num">03</span><span class="sec-title">Onde focar primeiro</span></div>
+
+    <div class="q">
+      <div class="label">Se a Mevo pudesse melhorar <b>uma</b> etapa nos próximos meses, qual traria mais alívio pro seu dia a dia?</div>
+      <div class="choices" data-radio="prioridade" data-from="journey"></div>
+    </div>
+
+    <div class="q">
+      <div class="label">Renovar receita: o que é mais importante pra você?</div>
+      <div class="hint">Ao repetir uma prescrição para um paciente conhecido, o que você mais quer ter à mão.</div>
+      <div class="choices" data-radio="renovar">
+        <label class="choice" data-val="modelos"><span class="dot"></span>Meus modelos de prescrição salvos</label>
+        <label class="choice" data-val="historico"><span class="dot"></span>O histórico do paciente (o que já foi prescrito antes)</label>
+        <label class="choice" data-val="ambos"><span class="dot"></span>Os dois têm o mesmo peso</label>
+        <label class="choice" data-val="depende"><span class="dot"></span>Depende do caso — explico abaixo</label>
+      </div>
+      <textarea name="renovar_obs" placeholder="Quer detalhar? (opcional)" style="margin-top:12px"></textarea>
+    </div>
+  </section>
+
+  <!-- ===== STEP 4 — MEVOSHOP ===== -->
+  <section class="step" data-step>
+    <div class="sec-head"><span class="sec-num">04</span><span class="sec-title">MevoShop</span></div>
+
+    <div class="q">
+      <div class="label">Você considera o MevoShop um diferencial da plataforma?</div>
+      <div class="choices" data-radio="shop_dif">
+        <label class="choice" data-val="sim"><span class="dot"></span>Sim, é um diferencial claro</label>
+        <label class="choice" data-val="parte"><span class="dot"></span>Em parte / depende</label>
+        <label class="choice" data-val="nao"><span class="dot"></span>Não vejo como diferencial</label>
+        <label class="choice" data-val="naoconhece"><span class="dot"></span>Ainda não conheço bem</label>
+      </div>
+    </div>
+
+    <div class="q">
+      <div class="label">Você indica a compra online pelo MevoShop para seus pacientes?</div>
+      <div class="choices" data-radio="shop_ind">
+        <label class="choice" data-val="frequente"><span class="dot"></span>Sim, indico com frequência</label>
+        <label class="choice" data-val="asvezes"><span class="dot"></span>Às vezes, em casos específicos</label>
+        <label class="choice" data-val="raro"><span class="dot"></span>Raramente</label>
+        <label class="choice" data-val="nunca"><span class="dot"></span>Nunca indico</label>
+      </div>
+      <textarea name="shop_obs" placeholder="O que te faz indicar — ou não? (opcional)" style="margin-top:12px"></textarea>
+    </div>
+  </section>
+
+  <!-- ===== STEP 5 — IA ===== -->
+  <section class="step" data-step>
+    <div class="sec-head"><span class="sec-num">05</span><span class="sec-title">Inteligência artificial na jornada</span></div>
+    <p class="sec-sub">Pensando em IA do jeito que você já conhece ou usa — se ela estivesse embarcada na Mevo, onde faria mais diferença?</p>
+
+    <div class="q">
+      <div class="label">Quão presente a IA já está na sua rotina hoje?</div>
+      <div class="sat" data-sat="ia_familiar" data-set="familiar"></div>
+    </div>
+
+    <div class="q">
+      <div class="label">Em quais etapas uma IA embarcada ajudaria mais? <span class="opt">(pode marcar mais de uma)</span></div>
+      <div class="choices" data-multi="ia_etapas" data-from="journey"></div>
+    </div>
+
+    <div class="q">
+      <div class="label">O que você mais gostaria que essa IA fizesse por você?</div>
+      <textarea name="ia_desejo" placeholder="Ex.: sugerir posologia, checar interações, preencher dados repetidos, resumir histórico..."></textarea>
+    </div>
+
+    <div class="q">
+      <div class="label">E o que te preocupa ou onde ela <b>não</b> deveria entrar?</div>
+      <div class="hint">Num contexto clínico e regulado, seu limite importa tanto quanto o desejo.</div>
+      <textarea name="ia_receio" placeholder="Ex.: decisão clínica, responsabilidade, privacidade do paciente..."></textarea>
+    </div>
+  </section>
+
+  <!-- ===== STEP 6 — ABERTO ===== -->
+  <section class="step" data-step>
+    <div class="sec-head"><span class="sec-num">06</span><span class="sec-title">O que falta</span></div>
+
+    <div class="q">
+      <div class="label">O que falta na Mevo Receita Digital que você considera importante e a gente deveria olhar com atenção?</div>
+      <div class="hint">Sem filtro. Pode ser uma dor antiga, um pedido, uma ideia solta.</div>
+      <textarea name="falta" placeholder="Escreva à vontade..." style="min-height:130px"></textarea>
+    </div>
+
+    <div class="q">
+      <div class="label">Mais alguma coisa que você queira deixar registrado? <span class="opt">(opcional)</span></div>
+      <textarea name="livre" placeholder="Espaço livre."></textarea>
+    </div>
+
+    <div class="save-error" id="saveError">Não foi possível salvar suas respostas. Verifique a conexão e toque em <b>Finalizar</b> novamente — nada do que você preencheu foi perdido.</div>
+  </section>
+
+  <!-- ===== DONE ===== -->
+  <section class="step" data-step>
+    <div class="done">
+      <div class="ring">✓</div>
+      <h2>Pronto!</h2>
+      <p>Obrigado pela colaboração. Suas respostas foram registradas e vão ajudar a moldar a Receita Digital.</p>
+      <span class="sess-tag" id="doneSess"></span>
+    </div>
+  </section>
+
+  <!-- ===== NAV ===== -->
+  <div class="nav" id="nav">
+    <button type="button" class="btn btn-ghost" id="prev" disabled>Voltar</button>
+    <button type="button" class="btn btn-next" id="next">Começar</button>
+  </div>
+  <div class="dots" id="dots"></div>
+
+  </form>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc, addDoc, setDoc, getDocs,
+    query, orderBy, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDHDEs3Df16Y-FjJTuemuhIQfF4v-b2jf8",
+    authDomain: "mevoexpert.firebaseapp.com",
+    projectId: "mevoexpert",
+    storageBucket: "mevoexpert.firebasestorage.app",
+    messagingSenderId: "914857686925",
+    appId: "1:914857686925:web:8d95a342dbbf8ec384efc4",
+    measurementId: "G-15GZXP0E45"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  import("https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js")
+    .then(m => m.getAnalytics(app)).catch(() => {});
+
+  const JOURNEY = [
+    ["acesso","🔑","Acesso e login"],
+    ["paciente","🧑","Identificação do paciente"],
+    ["medicamento","💊","Busca de medicamento e posologia"],
+    ["exames","🧪","Prescrição de exames"],
+    ["controlado","📋","Receituário controlado"],
+    ["assinatura","✍️","Assinatura digital"],
+    ["envio","📲","Envio e entrega ao paciente"]
+  ];
+
+  const SAT = [
+    {v:1,e:"😖",t:"Ruim"},{v:2,e:"😕",t:"Fraco"},{v:3,e:"😐",t:"Ok"},
+    {v:4,e:"🙂",t:"Bom"},{v:5,e:"😍",t:"Ótimo"}
+  ];
+  const FAMILIAR = [
+    {v:1,e:"🌑",t:"Nada"},{v:2,e:"🌒",t:"Pouco"},{v:3,e:"🌓",t:"Às vezes"},
+    {v:4,e:"🌔",t:"Bastante"},{v:5,e:"🌕",t:"Todo dia"}
+  ];
+
+  const data = { respostas:{}, jornada:{} };
+
+  /* =========================================================
+     SESSÕES — carrega do Firestore; a padrão vem pré-selecionada.
+     Se a coleção estiver vazia, semeia "Mevo Expert" e "Mevo Teste".
+     ========================================================= */
+  const SESSOES_SEED = [
+    { slug:"mevo-expert", nome:"Mevo Expert", padrao:true  },
+    { slug:"mevo-teste",  nome:"Mevo Teste",  padrao:false }
+  ];
+  let sessaoSelecionada = null;
+
+  async function carregarSessoes(){
+    try{
+      const snap = await getDocs(query(collection(db,"sessoes"), orderBy("criadaEm")));
+      let lista = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      if(lista.length === 0) lista = await semearSessoes();
+      return lista;
+    }catch(e){
+      // offline / regras: mantém a pesquisa utilizável com as sessões base
+      return SESSOES_SEED.map(s => ({ id:s.slug, ...s }));
+    }
+  }
+  async function semearSessoes(){
+    const out = [];
+    for(const s of SESSOES_SEED){
+      await setDoc(doc(db,"sessoes",s.slug), { ...s, criadaEm: serverTimestamp() });
+      out.push({ id:s.slug, ...s });
+    }
+    return out;
+  }
+  function renderSessoes(lista){
+    const box = document.getElementById("sessaoChoices");
+    box.innerHTML = "";
+    lista.forEach(s => {
+      const lab = document.createElement("label");
+      lab.className = "choice";
+      lab.innerHTML = '<span class="dot"></span>' + escHtml(s.nome);
+      lab.addEventListener("click", () => {
+        box.querySelectorAll(".choice").forEach(x => x.classList.remove("on"));
+        lab.classList.add("on");
+        sessaoSelecionada = s;
+      });
+      box.appendChild(lab);
+      const isDefault = s.padrao === true || s.nome === "Mevo Expert";
+      if((!sessaoSelecionada && isDefault)){ lab.classList.add("on"); sessaoSelecionada = s; }
+    });
+    if(!sessaoSelecionada && box.firstChild){
+      box.firstChild.classList.add("on");
+      sessaoSelecionada = lista[0];
+    }
+  }
+  function escHtml(s){ return (s||"").replace(/[&<>]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c])); }
+  carregarSessoes().then(renderSessoes);
+
+  // scale 0-10
+  document.querySelectorAll('[data-scale]').forEach(box => {
+    const key = box.getAttribute('data-scale');
+    for(let i=0;i<=10;i++){
+      const b = document.createElement('button');
+      b.type='button'; b.textContent=i;
+      b.onclick = () => {
+        box.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on'); data.respostas[key]=i;
+      };
+      box.appendChild(b);
+    }
+  });
+
+  // satisfaction sets
+  function buildSat(box,set,store){
+    const arr = set==='familiar' ? FAMILIAR : SAT;
+    arr.forEach(o => {
+      const b = document.createElement('button');
+      b.type='button';
+      b.innerHTML='<span class="emo">'+o.e+'</span><span class="t">'+o.t+'</span>';
+      b.onclick = () => {
+        box.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+        b.classList.add('on'); store(o.v);
+      };
+      box.appendChild(b);
+    });
+  }
+  document.querySelectorAll('[data-sat]').forEach(box => {
+    const key = box.getAttribute('data-sat');
+    const set = box.getAttribute('data-set') || 'sat';
+    buildSat(box,set,v => { data.respostas[key]=v; });
+  });
+
+  // journey cards
+  const mount = document.getElementById('journeyMount');
+  JOURNEY.forEach(j => {
+    const id = j[0];
+    data.jornada[id] = { etapa:j[2] };
+    const el = document.createElement('div');
+    el.className='journey';
+    el.innerHTML =
+      '<div class="journey-top"><div class="journey-ico">'+j[1]+'</div>'+
+      '<div><h3>'+j[2]+'</h3><span class="st">Como é essa etapa pra você?</span></div></div>'+
+      '<div class="journey-body">'+
+        '<div><span class="mini-label">Sua experiência</span><div class="sat" data-jsat="'+id+'"></div></div>'+
+        '<div class="split">'+
+          '<div class="up"><span class="mini-label"><span>+</span> O que mais gosta</span>'+
+            '<textarea data-jlike="'+id+'" placeholder="opcional"></textarea></div>'+
+          '<div class="down"><span class="mini-label"><span>–</span> O que mais te trava</span>'+
+            '<textarea data-jpain="'+id+'" placeholder="opcional"></textarea></div>'+
+        '</div>'+
+      '</div>';
+    mount.appendChild(el);
+    buildSat(el.querySelector('[data-jsat]'),'sat',v => { data.jornada[id].satisfacao=v; });
+    el.querySelector('[data-jlike]').addEventListener('input',e => { data.jornada[id].gosta=e.target.value; });
+    el.querySelector('[data-jpain]').addEventListener('input',e => { data.jornada[id].trava=e.target.value; });
+  });
+
+  // journey-derived choice lists (salvam o id da etapa, exibem o rótulo)
+  document.querySelectorAll('[data-from="journey"]').forEach(box => {
+    const multi = box.hasAttribute('data-multi');
+    const key = box.getAttribute('data-radio') || box.getAttribute('data-multi');
+    JOURNEY.forEach(j => {
+      const lab = document.createElement('label');
+      lab.className='choice'+(multi?' multi':'');
+      lab.innerHTML='<span class="dot"></span>'+j[1]+'  '+j[2];
+      lab.setAttribute('data-val',j[0]);
+      box.appendChild(lab);
+    });
+    wireChoices(box,key,multi);
+  });
+  document.querySelectorAll('[data-radio]:not([data-from])').forEach(box => {
+    wireChoices(box,box.getAttribute('data-radio'),false);
+  });
+  document.querySelectorAll('[data-multi]:not([data-from])').forEach(box => {
+    wireChoices(box,box.getAttribute('data-multi'),true);
+  });
+
+  function wireChoices(box,key,multi){
+    if(multi) data.respostas[key]=[];
+    box.querySelectorAll('.choice').forEach(c => {
+      const val = c.getAttribute('data-val') || c.textContent.trim();
+      c.addEventListener('click',() => {
+        if(multi){
+          c.classList.toggle('on');
+          const arr = data.respostas[key], i = arr.indexOf(val);
+          if(c.classList.contains('on')){ if(i<0) arr.push(val); }
+          else if(i>=0) arr.splice(i,1);
+        } else {
+          box.querySelectorAll('.choice').forEach(x => x.classList.remove('on'));
+          c.classList.add('on'); data.respostas[key]=val;
+        }
+      });
+    });
+  }
+
+  // text inputs
+  document.querySelectorAll('input[name],textarea[name]').forEach(inp => {
+    inp.addEventListener('input',() => { data.respostas[inp.name]=inp.value; });
+  });
+
+  // ---- stepper ----
+  const steps = [...document.querySelectorAll('[data-step]')];
+  let cur=0, maxReached=0;
+  const last = steps.length-1;
+  const prev = document.getElementById('prev'), next = document.getElementById('next');
+  const nav = document.getElementById('nav'), dotsBox = document.getElementById('dots');
+  const barFill = document.getElementById('barFill'), count = document.getElementById('count');
+  const saveError = document.getElementById('saveError');
+
+  steps.forEach((_,i) => {
+    const d = document.createElement('i');
+    d.onclick = () => { if(i<=maxReached && i<last) go(i); };
+    dotsBox.appendChild(d);
+  });
+  const dots = [...dotsBox.children];
+
+  function go(i){
+    cur = Math.max(0,Math.min(last,i));
+    maxReached = Math.max(maxReached,cur);
+    steps.forEach((s,k) => s.classList.toggle('active',k===cur));
+    dots.forEach((d,k) => d.classList.toggle('on',k===cur));
+    prev.disabled = cur===0;
+    next.textContent = cur===0 ? 'Começar' : (cur===last-1 ? 'Finalizar' : 'Continuar');
+    nav.style.display = cur===last ? 'none' : 'flex';
+    dotsBox.style.display = cur===last ? 'none' : 'flex';
+    const pct = Math.round(cur/last*100);
+    barFill.style.width=pct+'%'; count.textContent=pct+'%';
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // ---- gravação no Firestore ----
+  let _salvou = false;
+  function payload(){
+    const sess = sessaoSelecionada || { id:"mevo-expert", nome:"Mevo Expert" };
+    return {
+      sessaoId: sess.id,
+      sessaoNome: sess.nome,
+      pesquisa: "Mevo Experts — Receita Digital",
+      criadaEm: serverTimestamp(),
+      respostas: data.respostas,
+      jornada: data.jornada
+    };
+  }
+  async function finalizar(){
+    if(_salvou){ concluir(); return; }
+    saveError.classList.remove('show');
+    next.disabled = true; next.textContent = 'Enviando…';
+    try{
+      await addDoc(collection(db,"respostas"), payload());
+      _salvou = true;
+      concluir();
+    }catch(e){
+      saveError.classList.add('show');
+      next.textContent = 'Finalizar';
+    }finally{
+      next.disabled = false;
+    }
+  }
+  function concluir(){
+    const sess = sessaoSelecionada;
+    document.getElementById('doneSess').textContent = 'Sessão: ' + (sess ? sess.nome : 'Mevo Expert');
+    go(last);
+  }
+
+  next.onclick = () => {
+    if(cur === last-1){ finalizar(); }
+    else if(cur < last) go(cur+1);
+  };
+  prev.onclick = () => { if(cur>0) go(cur-1); };
+  go(0);
+</script>
+</body>
+</html>

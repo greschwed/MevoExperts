@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mevo Experts · Leitura Estratégica</title>
+<style>
+  :root{
+    --canvas:#17102b;
+    --panel:#211737;
+    --panel-2:#2a1e47;
+    --line:rgba(199,178,236,.14);
+    --ink:#f4eefc;
+    --soft:#a99cc4;
+    --dim:#7b6d9a;
+    --magenta:#ff2e9a;
+    --magenta-dim:rgba(255,46,154,.16);
+    --roxo:#a855f7;
+    --roxo-dim:rgba(168,85,247,.16);
+    --green:#34d399;
+    --amber:#fbbf24;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:"Segoe UI",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{background:var(--canvas);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1200px 600px at 15% -5%,rgba(168,85,247,.12),transparent 60%),radial-gradient(1000px 500px at 100% 0%,rgba(255,46,154,.10),transparent 55%);
+    background-attachment:fixed}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 22px 90px}
+
+  /* header */
+  header{padding:38px 0 26px;border-bottom:1px solid var(--line);margin-bottom:30px}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--magenta);margin-bottom:14px}
+  h1{font-size:clamp(30px,5vw,50px);font-weight:850;letter-spacing:-.035em;line-height:1;margin-bottom:16px}
+  h1 span{background:linear-gradient(100deg,var(--roxo),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .subline{color:var(--soft);font-size:15px;max-width:60ch}
+  .meta-row{display:flex;flex-wrap:wrap;gap:26px;margin-top:22px;font-family:var(--mono);font-size:12.5px;color:var(--dim)}
+  .meta-row b{color:var(--ink);font-weight:700}
+
+  /* filters + toolbar */
+  .filters{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 4px;align-items:center}
+  .filters .fl-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-right:6px}
+  .pill{font:inherit;font-size:13px;font-weight:600;color:var(--soft);background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:7px 15px;cursor:pointer;transition:all .16s}
+  .pill:hover{border-color:var(--roxo);color:var(--ink)}
+  .pill.on{background:linear-gradient(100deg,var(--roxo),var(--magenta));color:#fff;border-color:transparent}
+  .pill.action{border-style:dashed;color:var(--ink)}
+  .pill.action:hover{border-color:var(--magenta)}
+  .pill.busy{opacity:.55;pointer-events:none}
+  .demo-note{display:none;margin-top:16px;padding:12px 16px;border-radius:12px;background:var(--roxo-dim);border:1px solid rgba(168,85,247,.35);font-size:13px;color:var(--ink)}
+  .demo-note.show{display:block}
+  .demo-note b{color:var(--roxo)}
+
+  /* section scaffolding */
+  section{margin-top:40px;transition:opacity .45s ease,filter .45s ease,transform .45s ease;border-radius:20px}
+  section[data-focus]{cursor:pointer}
+  body.focus-mode section[data-focus]:not(.focada){opacity:.14;filter:blur(2px);pointer-events:none}
+  body.focus-mode section.focada{opacity:1;cursor:default;transform:scale(1.005)}
+  .sec-label{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .sec-label .n{font-family:var(--mono);font-size:12px;color:var(--magenta);font-weight:700}
+  .sec-label h2{font-size:21px;font-weight:800;letter-spacing:-.02em}
+  .sec-label .h{font-size:13px;color:var(--dim);margin-left:auto;text-align:right;max-width:40ch}
+
+  /* section quick-nav */
+  .secnav{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:60;display:flex;gap:6px;
+    background:rgba(23,16,43,.85);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:99px;padding:7px 10px;box-shadow:0 14px 40px -14px rgba(0,0,0,.7)}
+  .secnav button{font-family:var(--mono);font-size:11.5px;font-weight:700;color:var(--soft);background:transparent;border:1px solid transparent;border-radius:99px;padding:6px 11px;cursor:pointer;transition:all .16s;white-space:nowrap}
+  .secnav button:hover{color:var(--ink);border-color:var(--line)}
+  .secnav button.on{background:linear-gradient(100deg,var(--roxo),var(--magenta));color:#fff}
+  .secnav .sep{width:1px;background:var(--line);margin:2px 3px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px}
+  .grid{display:grid;gap:16px}
+
+  /* KPI */
+  .kpis{grid-template-columns:repeat(4,1fr)}
+  .kpi{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;position:relative;overflow:hidden}
+  .kpi::after{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--accent,var(--roxo))}
+  .kpi .cap{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:12px}
+  .kpi .big{font-size:40px;font-weight:850;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+  .kpi .big small{font-size:16px;font-weight:700;color:var(--soft)}
+  .kpi .note{font-size:12.5px;color:var(--soft);margin-top:9px;line-height:1.35}
+  .kpi .note b{color:var(--ink)}
+
+  /* opportunity map */
+  .map-shell{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+  .plot{position:relative;width:100%;aspect-ratio:1.35;min-height:300px}
+  .legend{display:flex;flex-direction:column;gap:14px;justify-content:center}
+  .legend h4{font-size:13px;font-family:var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--soft);margin-bottom:2px}
+  .legend .li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--soft)}
+  .legend .sw{width:14px;height:14px;border-radius:50%;flex-shrink:0;margin-top:2px}
+  .rank{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:4px}
+  .rank li{display:flex;align-items:center;gap:11px;font-size:13.5px}
+  .rank .b{font-family:var(--mono);font-weight:700;color:var(--canvas);background:var(--magenta);border-radius:6px;width:22px;height:22px;display:grid;place-items:center;font-size:12px;flex-shrink:0}
+  .rank .s{margin-left:auto;font-family:var(--mono);color:var(--dim);font-size:12px}
+
+  /* generic bars */
+  .barline{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+  .barline .lab{width:190px;font-size:13.5px;color:var(--soft);flex-shrink:0}
+  .barline .track{flex:1;height:22px;background:var(--panel-2);border-radius:7px;overflow:hidden;position:relative}
+  .barline .fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--roxo),var(--magenta));transition:width .8s cubic-bezier(.2,.7,.2,1)}
+  .barline .val{font-family:var(--mono);font-size:12.5px;color:var(--ink);width:44px;text-align:right;flex-shrink:0}
+
+  /* two-column theme board */
+  .two{grid-template-columns:1fr 1fr}
+  .themebox h4{font-size:14px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  .tag{display:inline-flex;align-items:center;gap:8px;font-size:13px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:0 7px 8px 0}
+  .tag .c{font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .dotg{color:var(--green)}.dotm{color:var(--magenta)}.dota{color:var(--amber)}
+
+  /* donut row */
+  .donuts{display:flex;gap:26px;flex-wrap:wrap;align-items:center}
+  .donut{display:flex;gap:16px;align-items:center}
+  .donut .leg{font-size:13px;color:var(--soft);display:flex;flex-direction:column;gap:6px}
+  .donut .leg span{display:flex;align-items:center;gap:8px}
+  .donut .leg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .gap-call{margin-top:16px;padding:14px 16px;border-radius:12px;background:var(--magenta-dim);border:1px solid rgba(255,46,154,.3);font-size:13.5px;color:var(--ink)}
+  .gap-call b{color:var(--magenta)}
+
+  /* voice wall */
+  .quote{border-left:3px solid var(--roxo);padding:6px 0 6px 16px;margin-bottom:16px}
+  .quote p{font-size:15px;color:var(--ink);font-style:italic}
+  .quote cite{font-family:var(--mono);font-size:11.5px;color:var(--dim);font-style:normal;display:block;margin-top:6px}
+
+  /* backlog */
+  .oppcard{border:1px solid var(--line);border-radius:14px;padding:18px;background:linear-gradient(180deg,var(--panel-2),var(--panel));position:relative}
+  .oppcard .pr{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:6px;font-weight:700}
+  .pr-alta{background:var(--magenta);color:var(--canvas)}
+  .pr-media{background:var(--amber);color:var(--canvas)}
+  .pr-exp{background:var(--roxo);color:#fff}
+  .oppcard h4{font-size:16px;margin:12px 0 8px;letter-spacing:-.01em}
+  .oppcard p{font-size:13.5px;color:var(--soft);line-height:1.5}
+  .oppcard .link{font-family:var(--mono);font-size:11.5px;color:var(--roxo);margin-top:10px;display:inline-block}
+
+  .foot{margin-top:46px;padding-top:22px;border-top:1px solid var(--line);font-size:12.5px;color:var(--dim);line-height:1.6}
+  .foot code{font-family:var(--mono);color:var(--soft);background:var(--panel);padding:2px 6px;border-radius:5px}
+
+  /* modal nova sessão */
+  .modal-back{display:none;position:fixed;inset:0;z-index:80;background:rgba(12,7,26,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;padding:22px}
+  .modal-back.show{display:flex}
+  .modal{width:100%;max-width:420px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;box-shadow:0 30px 80px -20px rgba(0,0,0,.8)}
+  .modal h3{font-size:19px;font-weight:800;letter-spacing:-.02em;margin-bottom:6px}
+  .modal p{font-size:13.5px;color:var(--soft);margin-bottom:18px}
+  .modal input{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--panel-2);border:1.5px solid var(--line);border-radius:11px;padding:12px 14px}
+  .modal input:focus{outline:none;border-color:var(--magenta)}
+  .modal .err{font-size:12.5px;color:var(--magenta);margin-top:8px;min-height:18px}
+  .modal .row{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+  .modal button{font:inherit;font-weight:700;font-size:14px;border-radius:10px;padding:10px 20px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--soft)}
+  .modal button.primary{background:linear-gradient(100deg,var(--roxo),var(--magenta));color:#fff;border-color:transparent}
+  .modal button:disabled{opacity:.5;cursor:wait}
+
+  svg text{font-family:var(--mono)}
+  @media(max-width:820px){
+    .kpis{grid-template-columns:1fr 1fr}
+    .map-shell,.two{grid-template-columns:1fr}
+    .barline .lab{width:120px}
+    .secnav{max-width:calc(100vw - 20px);overflow-x:auto}
+  }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Mevo Experts · Receita Digital</div>
+    <h1>O que a sala <span>nos disse</span> — e para onde o produto vai.</h1>
+    <p class="subline">Leitura estratégica das respostas da pesquisa, organizada para decisão de roadmap. Cada gráfico responde a uma pergunta de produto, não só reporta um número. Clique numa seção para focar nela.</p>
+    <div class="meta-row">
+      <span><b id="mN">—</b> respondentes</span>
+      <span><b id="mEsp">—</b> especialidades</span>
+      <span>atualizado <b id="mData">—</b></span>
+      <span>fonte: <b>Firestore · mevoexpert</b></span>
+    </div>
+    <div class="filters" id="sessFilters">
+      <span class="fl-label">Sessão</span>
+    </div>
+    <div class="filters" id="filters">
+      <span class="fl-label">Recortar por</span>
+    </div>
+    <div class="filters">
+      <span class="fl-label">Ações</span>
+      <button class="pill action" id="btnRefresh" type="button">↻ Atualizar</button>
+      <button class="pill action" id="btnNovaSessao" type="button">+ Nova Sessão</button>
+    </div>
+    <div class="demo-note" id="demoNote"><b>Sem respostas nesta sessão ainda.</b> Exibindo dados de demonstração — assim que as primeiras respostas chegarem, toque em ↻ Atualizar.</div>
+  </header>
+
+  <!-- KPIs -->
+  <section data-focus="kpi">
+    <div class="grid kpis" id="kpis"></div>
+  </section>
+
+  <!-- OPPORTUNITY MAP -->
+  <section data-focus="s1" id="sec-1">
+    <div class="sec-label"><span class="n">01</span><h2>Mapa de oportunidade</h2>
+      <span class="h">Onde a satisfação é baixa e a demanda por melhoria é alta = atacar primeiro.</span></div>
+    <div class="card">
+      <div class="map-shell">
+        <div class="plot" id="mapPlot"></div>
+        <div class="legend">
+          <div>
+            <h4>Como ler</h4>
+            <div class="li"><span class="sw" style="background:var(--magenta)"></span> Quanto mais para a <b>esquerda</b>, menor a satisfação. Quanto mais para <b>cima</b>, mais gente pediu melhoria.</div>
+            <div class="li"><span class="sw" style="background:var(--roxo)"></span> Tamanho da bolha = volume de menções. Brilho = quanto querem IA ali.</div>
+          </div>
+          <div>
+            <h4>Atacar primeiro</h4>
+            <ol class="rank" id="mapRank"></ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JOURNEY CURVE -->
+  <section data-focus="s2" id="sec-2">
+    <div class="sec-label"><span class="n">02</span><h2>A curva da jornada</h2>
+      <span class="h">Satisfação média em cada etapa. O vale mostra onde a experiência dói.</span></div>
+    <div class="card"><div class="plot" id="curvePlot" style="aspect-ratio:2.8;min-height:230px"></div></div>
+  </section>
+
+  <!-- PRIORITY + RENOVAR -->
+  <section data-focus="s3" id="sec-3">
+    <div class="sec-label"><span class="n">03</span><h2>Prioridade e renovação</h2>
+      <span class="h">O que a sala escolheu melhorar, e o que sustenta a renovação de receita.</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:16px;color:var(--soft)">Etapa que mais pediram para melhorar</h4>
+        <div id="prioBars"></div>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:16px;color:var(--soft)">Renovar receita: no que se apoiam</h4>
+        <div id="renovarBars"></div>
+        <div class="gap-call" id="renovarNote"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MEVOSHOP -->
+  <section data-focus="s4" id="sec-4">
+    <div class="sec-label"><span class="n">04</span><h2>MevoShop: acreditar × recomendar</h2>
+      <span class="h">O diferencial percebido só vira valor quando é indicado ao paciente.</span></div>
+    <div class="card">
+      <div class="donuts" id="shopDonuts"></div>
+      <div class="gap-call" id="shopGap"></div>
+    </div>
+  </section>
+
+  <!-- IA -->
+  <section data-focus="s5" id="sec-5">
+    <div class="sec-label"><span class="n">05</span><h2>Inteligência artificial na jornada</h2>
+      <span class="h">Prontidão do público, onde a IA é desejada, e os limites que impõem.</span></div>
+    <div class="grid two" style="margin-bottom:16px">
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:16px;color:var(--soft)">Zonas onde mais querem IA</h4>
+        <div id="iaZonas"></div>
+      </div>
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:16px;color:var(--soft)">Prontidão para IA (uso hoje)</h4>
+        <div id="iaReady"></div>
+      </div>
+    </div>
+    <div class="card grid two">
+      <div class="themebox"><h4><span class="dotg">●</span> Sinal verde — o que desejam</h4><div id="iaDesejo"></div></div>
+      <div class="themebox"><h4><span class="dota">●</span> Guarda-corpo — o que os preocupa</h4><div id="iaReceio"></div></div>
+    </div>
+  </section>
+
+  <!-- VOICE -->
+  <section data-focus="s6" id="sec-6">
+    <div class="sec-label"><span class="n">06</span><h2>A voz do especialista</h2>
+      <span class="h">Temas de "o que falta" e frases que devem ecoar na sala.</span></div>
+    <div class="grid two">
+      <div class="card">
+        <h4 style="font-size:14px;margin-bottom:16px;color:var(--soft)">Temas mais citados em "o que falta"</h4>
+        <div id="faltaTemas"></div>
+      </div>
+      <div class="card" id="voiceWall"></div>
+    </div>
+  </section>
+
+  <!-- BACKLOG -->
+  <section data-focus="s7" id="sec-7">
+    <div class="sec-label"><span class="n">07</span><h2>Backlog de oportunidades</h2>
+      <span class="h">Síntese priorizada, gerada a partir dos próprios dados acima.</span></div>
+    <div class="grid" id="backlog" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))"></div>
+  </section>
+
+  <div class="foot">
+    Dados lidos do <code>Cloud Firestore</code> (projeto <code>mevoexpert</code>, coleções <code>sessoes</code> e <code>respostas</code>).
+    A pesquisa em <code>/mevoexpert</code> grava cada resposta com a sessão selecionada; este painel agrega por sessão e recalcula tudo no navegador.
+  </div>
+</div>
+
+<!-- quick-nav das seções -->
+<nav class="secnav" id="secnav">
+  <button data-target="">Tudo</button>
+  <span class="sep"></span>
+  <button data-target="sec-1">01</button>
+  <button data-target="sec-2">02</button>
+  <button data-target="sec-3">03</button>
+  <button data-target="sec-4">04</button>
+  <button data-target="sec-5">05</button>
+  <button data-target="sec-6">06</button>
+  <button data-target="sec-7">07</button>
+</nav>
+
+<!-- modal nova sessão -->
+<div class="modal-back" id="modalBack">
+  <div class="modal">
+    <h3>Nova sessão</h3>
+    <p>Dê um nome para a sessão. Ela ficará disponível imediatamente no seletor da pesquisa e neste painel.</p>
+    <input type="text" id="novaSessNome" maxlength="60" placeholder="Ex.: Mevo Experts SP — Ago/2026">
+    <div class="err" id="novaSessErr"></div>
+    <div class="row">
+      <button type="button" id="novaSessCancel">Cancelar</button>
+      <button type="button" class="primary" id="novaSessSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, doc, setDoc, getDoc, getDocs,
+  query, orderBy, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDHDEs3Df16Y-FjJTuemuhIQfF4v-b2jf8",
+  authDomain: "mevoexpert.firebaseapp.com",
+  projectId: "mevoexpert",
+  storageBucket: "mevoexpert.firebasestorage.app",
+  messagingSenderId: "914857686925",
+  appId: "1:914857686925:web:8d95a342dbbf8ec384efc4",
+  measurementId: "G-15GZXP0E45"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const STAGES = [
+  {id:"acesso",      label:"Acesso e login"},
+  {id:"paciente",    label:"Identificação do paciente"},
+  {id:"medicamento", label:"Medicamento e posologia"},
+  {id:"exames",      label:"Prescrição de exames"},
+  {id:"controlado",  label:"Receituário controlado"},
+  {id:"assinatura",  label:"Assinatura digital"},
+  {id:"envio",       label:"Envio ao paciente"}
+];
+const stLabel={}; STAGES.forEach(s=>{stLabel[s.id]=s.label});
+// aceita tanto o id quanto o rótulo antigo salvo em respostas legadas
+const labelToId={}; STAGES.forEach(s=>{labelToId[s.label]=s.id});
+labelToId["Busca de medicamento e posologia"]="medicamento";
+labelToId["Envio e entrega ao paciente"]="envio";
+function stageId(v){ return stLabel[v] ? v : (labelToId[v] || v); }
+
+/* ---------- gerador de amostra determinístico (fallback de demonstração) ---------- */
+function lcg(seed){return function(){seed=(seed*1664525+1013904223)%4294967296;return seed/4294967296}}
+function sample(){
+  var r=lcg(20260711), pick=function(a){return a[Math.floor(r()*a.length)]};
+  var esp=["Endocrinologia","Clínica Geral","Ortodontia","Dermatologia","Pediatria","Cardiologia","Ginecologia","Odontologia"];
+  var pals=["prático","rápido","confuso","seguro","burocrático","intuitivo","lento","essencial","travado","confiável"];
+  var base={acesso:4.3,paciente:4.0,medicamento:2.6,exames:3.1,controlado:2.3,assinatura:3.4,envio:4.1};
+  var desejos=["Sugerir posologia","Checar interações","Resumir histórico","Autopreencher dados","Sugerir exames","Revisar receita"];
+  var receios=["Decisão clínica","Responsabilidade legal","Privacidade do paciente","Erro sem revisão","Perda de autonomia"];
+  var faltas=["Integração com prontuário","App melhor no celular","Busca de medicamento mais rápida","Histórico do paciente visível","Modelos mais flexíveis","Menos cliques no controlado","Assinatura mais simples"];
+  var likesByStage={acesso:["Login rápido","Acesso fácil"],paciente:["Cadastro simples"],medicamento:["Base ampla"],exames:["Prático"],controlado:["Cumpre a norma"],assinatura:["Válida juridicamente"],envio:["Chega no WhatsApp"]};
+  var painsByStage={acesso:["Cai a sessão"],paciente:["Dado repetido"],medicamento:["Busca ruim","Posologia manual","Muitos cliques"],exames:["Não acha o exame"],controlado:["Regras confusas","Burocrático"],assinatura:["Certificado chato"],envio:["Paciente não abre"]};
+  var out=[];
+  for(var i=0;i<26;i++){
+    var jornada={};
+    STAGES.forEach(function(s){
+      var m=base[s.id], sat=Math.max(1,Math.min(5,Math.round(m+(r()-0.5)*1.8)));
+      jornada[s.id]={sat:sat, gosta:r()<.4?pick(likesByStage[s.id]):"", trava:sat<=3&&r()<.7?pick(painsByStage[s.id]):""};
+    });
+    var lowest=STAGES.slice().sort(function(a,b){return jornada[a.id].sat-jornada[b.id].sat});
+    var prioridade=(r()<.7?lowest[0]:pick(lowest.slice(0,3))).id;
+    var nps=pick([9,10,8,7,9,6,10,8,4,9,7,10,3,8]);
+    var iaN=1+Math.floor(r()*3);
+    var iaEt=[]; lowest.slice(0,4).forEach(function(s){if(r()<.55)iaEt.push(s.id)});
+    if(iaEt.length===0)iaEt.push("medicamento");
+    out.push({
+      nome:"Dr(a). "+String.fromCharCode(65+i%26)+".",
+      especialidade:pick(esp),
+      nps:nps,
+      palavra:pick(pals),
+      jornada:jornada,
+      prioridade:prioridade,
+      renovar:pick(["historico","historico","modelos","modelos","ambos","depende"]),
+      shop_dif:pick(["sim","sim","parte","parte","nao","naoconhece"]),
+      shop_ind:pick(["frequente","asvezes","asvezes","raro","nunca"]),
+      ia_familiar:Math.min(5,iaN+(r()<.4?1:0)),
+      ia_etapas:iaEt,
+      ia_desejo:pick(desejos),
+      ia_receio:pick(receios),
+      falta:pick(faltas)
+    });
+  }
+  return out;
+}
+
+/* ---------- util ---------- */
+var $=function(s){return document.querySelector(s)};
+function avg(a){a=a.filter(function(v){return v>0});return a.length?a.reduce(function(x,y){return x+y},0)/a.length:0}
+function pct(n,d){return d?Math.round(n/d*100):0}
+function esc(s){return (s||"").replace(/[&<>]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;"}[c]})}
+function countBy(arr,fn){var m={};arr.forEach(function(x){var k=fn(x);if(k)m[k]=(m[k]||0)+1});return m}
+function slugify(s){return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")}
+
+/* ---------- estado ---------- */
+var SESSOES=[], ALL_RAW=[], BASE=[], CURRENT=[];
+var sessaoAtual=null;
+
+/* ---------- Firestore ---------- */
+const SESSOES_SEED=[
+  {slug:"mevo-expert",nome:"Mevo Expert",padrao:true},
+  {slug:"mevo-teste", nome:"Mevo Teste", padrao:false}
+];
+async function semearSessoes(){
+  const out=[];
+  for(const s of SESSOES_SEED){
+    await setDoc(doc(db,"sessoes",s.slug),{...s,criadaEm:serverTimestamp()});
+    out.push({id:s.slug,...s});
+  }
+  return out;
+}
+async function fetchTudo(){
+  const [sessSnap,respSnap]=await Promise.all([
+    getDocs(query(collection(db,"sessoes"),orderBy("criadaEm"))),
+    getDocs(query(collection(db,"respostas"),orderBy("criadaEm")))
+  ]);
+  SESSOES=sessSnap.docs.map(d=>({id:d.id,...d.data()}));
+  if(SESSOES.length===0) SESSOES=await semearSessoes();
+  ALL_RAW=respSnap.docs.map(adapt);
+}
+
+/* converte a doc do Firestore para o shape interno do painel */
+function adapt(docSnap){
+  const d=docSnap.data()||{};
+  const r=d.respostas||{};
+  const j={};
+  STAGES.forEach(s=>{
+    const src=(d.jornada||{})[s.id]||{};
+    j[s.id]={sat:src.satisfacao||0,gosta:src.gosta||"",trava:src.trava||""};
+  });
+  return {
+    sessaoId:d.sessaoId||"",
+    sessaoNome:d.sessaoNome||"",
+    nome:r.nome||"",
+    especialidade:(r.especialidade||"").trim()||"Não informada",
+    nps:(typeof r.nps==="number")?r.nps:null,
+    palavra:r.palavra||"",
+    jornada:j,
+    prioridade:r.prioridade?stageId(r.prioridade):"",
+    renovar:r.renovar||"",
+    shop_dif:r.shop_dif||"",
+    shop_ind:r.shop_ind||"",
+    ia_familiar:(typeof r.ia_familiar==="number")?r.ia_familiar:0,
+    ia_etapas:(r.ia_etapas||[]).map(stageId),
+    ia_desejo:r.ia_desejo||"",
+    ia_receio:r.ia_receio||"",
+    falta:r.falta||""
+  };
+}
+
+/* ---------- render principal ---------- */
+function renderAll(data){
+  CURRENT=data;
+  var N=data.length;
+  $("#mN").textContent=N;
+
+  /* KPIs */
+  var npsBase=data.filter(function(d){return d.nps!==null&&d.nps!==undefined});
+  var Nn=npsBase.length||1;
+  var prom=npsBase.filter(function(d){return d.nps>=9}).length;
+  var det=npsBase.filter(function(d){return d.nps<=6}).length;
+  var nps=pct(prom,Nn)-pct(det,Nn);
+  var stAvg=STAGES.map(function(s){return {id:s.id,label:s.label,avg:avg(data.map(function(d){return d.jornada[s.id].sat}))}});
+  var worst=stAvg.slice().sort(function(a,b){return a.avg-b.avg})[0];
+  var iaAll=[];data.forEach(function(d){iaAll=iaAll.concat(d.ia_etapas)});
+  var iaCount=countBy(iaAll,function(x){return x});
+  var iaTop=Object.keys(iaCount).sort(function(a,b){return iaCount[b]-iaCount[a]})[0]||"medicamento";
+  var difSim=data.filter(function(d){return d.shop_dif==="sim"||d.shop_dif==="parte"}).length;
+  var indSim=data.filter(function(d){return d.shop_ind==="frequente"||d.shop_ind==="asvezes"}).length;
+  var gap=pct(difSim,N)-pct(indSim,N);
+
+  var kpiHtml=[
+    {cap:"NPS da sala",big:(nps>0?"+":"")+nps,note:"<b>"+pct(prom,Nn)+"%</b> promotores · <b>"+pct(det,Nn)+"%</b> detratores",accent:nps>=50?"var(--green)":nps>=0?"var(--amber)":"var(--magenta)"},
+    {cap:"Maior dor",big:worst.avg.toFixed(1),small:"/5",note:"<b>"+worst.label+"</b> é a etapa com menor satisfação",accent:"var(--magenta)"},
+    {cap:"Oportunidade de IA",big:pct(iaCount[iaTop]||0,N)+"%",note:"pedem IA em <b>"+(stLabel[iaTop]||iaTop)+"</b>",accent:"var(--roxo)"},
+    {cap:"Gap do MevoShop",big:(gap>0?"+":"")+gap+"pp",note:"<b>"+pct(difSim,N)+"%</b> veem diferencial, só <b>"+pct(indSim,N)+"%</b> indicam",accent:"var(--amber)"}
+  ].map(function(k){
+    return '<div class="kpi" style="--accent:'+k.accent+'"><div class="cap">'+k.cap+'</div>'+
+      '<div class="big">'+k.big+(k.small?'<small>'+k.small+'</small>':'')+'</div>'+
+      '<div class="note">'+k.note+'</div></div>';
+  }).join("");
+  $("#kpis").innerHTML=kpiHtml;
+
+  /* dados para o mapa */
+  var prioCount=countBy(data,function(d){return d.prioridade});
+  var mapData=STAGES.map(function(s){
+    var a=avg(data.map(function(d){return d.jornada[s.id].sat}));
+    var demanda=pct((prioCount[s.id]||0)+(iaCount[s.id]||0), N*2);
+    var vol=(prioCount[s.id]||0)+(iaCount[s.id]||0);
+    var iaPct=pct(iaCount[s.id]||0,N);
+    return {id:s.id,label:s.label,sat:a||1,demanda:demanda,vol:vol,ia:iaPct};
+  });
+  drawMap(mapData);
+
+  var score=mapData.slice().sort(function(a,b){return (b.demanda-(b.sat-1)/4*40)-(a.demanda-(a.sat-1)/4*40)});
+  $("#mapRank").innerHTML=score.slice(0,4).map(function(s,i){
+    return '<li><span class="b">'+(i+1)+'</span>'+s.label+'<span class="s">'+s.sat.toFixed(1)+'/5 · '+s.demanda+'% pedem</span></li>';
+  }).join("");
+
+  drawCurve(stAvg);
+
+  /* prioridade bars */
+  var pmax=Math.max.apply(null,STAGES.map(function(s){return prioCount[s.id]||0}))||1;
+  $("#prioBars").innerHTML=STAGES.slice().sort(function(a,b){return (prioCount[b.id]||0)-(prioCount[a.id]||0)}).map(function(s){
+    var v=prioCount[s.id]||0;
+    return bar(s.label, v/pmax*100, v);
+  }).join("");
+
+  /* renovar */
+  var rmap={historico:"Histórico do paciente",modelos:"Meus modelos salvos",ambos:"Ambos igualmente",depende:"Depende do caso"};
+  var rc=countBy(data,function(d){return d.renovar});
+  var rmax=Math.max.apply(null,Object.keys(rmap).map(function(k){return rc[k]||0}))||1;
+  $("#renovarBars").innerHTML=Object.keys(rmap).map(function(k){return bar(rmap[k],(rc[k]||0)/rmax*100,rc[k]||0)}).join("");
+  var histP=pct(rc.historico||0,N), modP=pct(rc.modelos||0,N);
+  $("#renovarNote").innerHTML= histP>=modP
+    ? "O <b>histórico do paciente</b> lidera a renovação ("+histP+"%). Reforça priorizar histórico visível na jornada de repetição — e conversa direto com a Reestruturação de Modelos."
+    : "Os <b>modelos salvos</b> lideram ("+modP+"%). A Reestruturação de Modelos (MEVO-5077) mira exatamente essa dor.";
+
+  drawShop(data,N);
+
+  /* IA zonas */
+  var izmax=Math.max.apply(null,STAGES.map(function(s){return iaCount[s.id]||0}))||1;
+  $("#iaZonas").innerHTML=STAGES.slice().sort(function(a,b){return (iaCount[b.id]||0)-(iaCount[a.id]||0)}).slice(0,5).map(function(s){
+    return bar(s.label,(iaCount[s.id]||0)/izmax*100,iaCount[s.id]||0);
+  }).join("");
+
+  /* IA prontidão */
+  var ready=[1,2,3,4,5].map(function(v){return data.filter(function(d){return d.ia_familiar===v}).length});
+  var moons=["🌑 Nada","🌒 Pouco","🌓 Às vezes","🌔 Bastante","🌕 Todo dia"];
+  var rmaxr=Math.max.apply(null,ready)||1;
+  $("#iaReady").innerHTML=ready.map(function(v,i){return bar(moons[i],v/rmaxr*100,v)}).join("");
+
+  /* IA desejo/receio temas */
+  var dc=countBy(data,function(d){return d.ia_desejo});
+  $("#iaDesejo").innerHTML=topTags(dc,"dotg");
+  var cc=countBy(data,function(d){return d.ia_receio});
+  $("#iaReceio").innerHTML=topTags(cc,"dota");
+
+  /* falta temas */
+  var fc=countBy(data,function(d){return d.falta});
+  $("#faltaTemas").innerHTML=topTags(fc,"dotm");
+
+  /* voice wall */
+  var quotes=[];
+  data.forEach(function(d){
+    STAGES.forEach(function(s){if(d.jornada[s.id].trava)quotes.push({t:d.jornada[s.id].trava,src:d.especialidade+" · "+s.label})});
+    if(d.falta)quotes.push({t:d.falta,src:d.especialidade+" · o que falta"});
+  });
+  quotes=quotes.sort(function(){return r0()-.5}).slice(0,4);
+  $("#voiceWall").innerHTML='<h4 style="font-size:14px;margin-bottom:16px;color:var(--soft)">Vozes da sala</h4>'+
+    (quotes.length?quotes.map(function(q){return '<div class="quote"><p>"'+esc(q.t)+'"</p><cite>'+esc(q.src)+'</cite></div>'}).join("")
+      :'<span style="color:var(--dim);font-size:13px">Sem citações neste recorte.</span>');
+
+  drawBacklog(worst,score,iaTop,iaCount,N,gap,difSim,indSim,histP,modP);
+}
+var r0=lcg(7);
+
+/* ---------- componentes ---------- */
+function bar(lab,w,v){
+  return '<div class="barline"><div class="lab">'+esc(lab)+'</div>'+
+    '<div class="track"><div class="fill" style="width:'+w+'%"></div></div>'+
+    '<div class="val">'+v+'</div></div>';
+}
+function topTags(map,cls){
+  var ks=Object.keys(map).sort(function(a,b){return map[b]-map[a]}).slice(0,6);
+  if(!ks.length)return '<span style="color:var(--dim);font-size:13px">Sem respostas neste recorte.</span>';
+  return ks.map(function(k){return '<span class="tag"><span class="'+cls+'">●</span>'+esc(k)+'<span class="c">'+map[k]+'</span></span>'}).join("");
+}
+
+/* ---------- mapa de oportunidade (SVG) ---------- */
+function drawMap(d){
+  var W=560,H=W/1.35, pad={l:52,r:24,t:22,b:44};
+  var x=function(v){return pad.l+(v-1)/4*(W-pad.l-pad.r)};
+  var y=function(v){return H-pad.b-(v/100)*(H-pad.t-pad.b)};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">';
+  var midX=x(3), topY=y(50);
+  s+='<rect x="'+pad.l+'" y="'+pad.t+'" width="'+(midX-pad.l)+'" height="'+(topY-pad.t)+'" fill="rgba(255,46,154,.10)"/>';
+  s+='<text x="'+(pad.l+8)+'" y="'+(pad.t+18)+'" fill="var(--magenta)" font-size="11" letter-spacing="1.5">ATACAR PRIMEIRO</text>';
+  [1,2,3,4,5].forEach(function(v){s+='<line x1="'+x(v)+'" y1="'+pad.t+'" x2="'+x(v)+'" y2="'+(H-pad.b)+'" stroke="var(--line)"/>'+
+    '<text x="'+x(v)+'" y="'+(H-pad.b+18)+'" fill="var(--dim)" font-size="10" text-anchor="middle">'+v+'</text>';});
+  [0,25,50,75,100].forEach(function(v){s+='<line x1="'+pad.l+'" y1="'+y(v)+'" x2="'+(W-pad.r)+'" y2="'+y(v)+'" stroke="var(--line)"/>'+
+    '<text x="'+(pad.l-8)+'" y="'+(y(v)+3)+'" fill="var(--dim)" font-size="10" text-anchor="end">'+v+'%</text>';});
+  s+='<text x="'+((W)/2)+'" y="'+(H-6)+'" fill="var(--soft)" font-size="11" text-anchor="middle">satisfação média (1–5)</text>';
+  s+='<text transform="translate(14,'+(H/2)+') rotate(-90)" fill="var(--soft)" font-size="11" text-anchor="middle">demanda por melhoria</text>';
+  d.forEach(function(p){
+    var cx=x(p.sat),cy=y(p.demanda),rad=8+p.vol*2.4;
+    var op=.35+p.ia/100*.55;
+    s+='<circle cx="'+cx+'" cy="'+cy+'" r="'+rad+'" fill="rgba(168,85,247,'+op+')" stroke="var(--magenta)" stroke-width="1.5"/>';
+    var short=p.label.split(" ")[0];
+    s+='<text x="'+cx+'" y="'+(cy-rad-6)+'" fill="var(--ink)" font-size="10.5" text-anchor="middle">'+esc(short)+'</text>';
+  });
+  s+='</svg>';
+  $("#mapPlot").innerHTML=s;
+}
+
+/* ---------- curva da jornada (SVG) ---------- */
+function drawCurve(stAvg){
+  var W=900,H=W/2.8, pad={l:40,r:20,t:20,b:52};
+  var n=stAvg.length;
+  var x=function(i){return pad.l+i/(n-1)*(W-pad.l-pad.r)};
+  var y=function(v){return H-pad.b-((Math.max(v,1)-1)/4)*(H-pad.t-pad.b)};
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="100%" preserveAspectRatio="xMidYMid meet">';
+  [1,2,3,4,5].forEach(function(v){s+='<line x1="'+pad.l+'" y1="'+y(v)+'" x2="'+(W-pad.r)+'" y2="'+y(v)+'" stroke="var(--line)"/>'+
+    '<text x="'+(pad.l-8)+'" y="'+(y(v)+3)+'" fill="var(--dim)" font-size="10" text-anchor="end">'+v+'</text>';});
+  var pts=stAvg.map(function(p,i){return [x(i),y(p.avg)]});
+  var area="M"+pts[0][0]+","+(H-pad.b)+" ";
+  pts.forEach(function(p){area+="L"+p[0]+","+p[1]+" "});
+  area+="L"+pts[n-1][0]+","+(H-pad.b)+" Z";
+  s+='<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(255,46,154,.35)"/><stop offset="1" stop-color="rgba(255,46,154,0)"/></linearGradient></defs>';
+  s+='<path d="'+area+'" fill="url(#ag)"/>';
+  var line="M"+pts.map(function(p){return p[0]+","+p[1]}).join(" L");
+  s+='<path d="'+line+'" fill="none" stroke="var(--magenta)" stroke-width="2.5"/>';
+  stAvg.forEach(function(p,i){
+    s+='<circle cx="'+x(i)+'" cy="'+y(p.avg)+'" r="5" fill="var(--canvas)" stroke="var(--magenta)" stroke-width="2.5"/>';
+    s+='<text x="'+x(i)+'" y="'+(y(p.avg)-14)+'" fill="var(--ink)" font-size="11" text-anchor="middle">'+p.avg.toFixed(1)+'</text>';
+    var w=p.label.split(" ")[0];
+    s+='<text x="'+x(i)+'" y="'+(H-pad.b+20)+'" fill="var(--soft)" font-size="10" text-anchor="middle">'+esc(w)+'</text>';
+  });
+  s+='</svg>';
+  $("#curvePlot").innerHTML=s;
+}
+
+/* ---------- MevoShop donuts ---------- */
+function drawShop(data,N){
+  function donut(title,segs){
+    var R=44,C=2*Math.PI*R,off=0;
+    var svg='<svg viewBox="0 0 120 120" width="120" height="120">';
+    segs.forEach(function(g){
+      var len=N?g.v/N*C:0;
+      svg+='<circle cx="60" cy="60" r="'+R+'" fill="none" stroke="'+g.c+'" stroke-width="16" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 60 60)"/>';
+      off+=len;
+    });
+    svg+='<text x="60" y="66" fill="var(--ink)" font-size="17" text-anchor="middle" font-weight="700">'+N+'</text></svg>';
+    var leg=segs.map(function(g){return '<span><i style="background:'+g.c+'"></i>'+g.t+' · '+pct(g.v,N)+'%</span>'}).join("");
+    return '<div class="donut"><div>'+svg+'</div><div class="leg"><b style="color:var(--ink);font-size:13px">'+title+'</b>'+leg+'</div></div>';
+  }
+  var dif=[
+    {t:"Diferencial",c:"var(--green)",v:data.filter(function(d){return d.shop_dif==="sim"}).length},
+    {t:"Em parte",c:"var(--amber)",v:data.filter(function(d){return d.shop_dif==="parte"}).length},
+    {t:"Não / não conhece",c:"var(--dim)",v:data.filter(function(d){return d.shop_dif==="nao"||d.shop_dif==="naoconhece"}).length}
+  ];
+  var ind=[
+    {t:"Indica",c:"var(--roxo)",v:data.filter(function(d){return d.shop_ind==="frequente"||d.shop_ind==="asvezes"}).length},
+    {t:"Raro / nunca",c:"var(--dim)",v:data.filter(function(d){return d.shop_ind==="raro"||d.shop_ind==="nunca"}).length}
+  ];
+  $("#shopDonuts").innerHTML=donut("Acham diferencial?",dif)+donut("Indicam ao paciente?",ind);
+  var difP=pct(dif[0].v+dif[1].v,N), indP=pct(ind[0].v,N);
+  $("#shopGap").innerHTML="<b>"+difP+"%</b> enxergam algum diferencial, mas só <b>"+indP+"%</b> indicam de fato. O gap é de <b>ativação</b> — material de indicação, cupom visível no fluxo — mais do que de produto novo.";
+}
+
+/* ---------- backlog sintetizado ---------- */
+function drawBacklog(worst,score,iaTop,iaCount,N,gap,difSim,indSim,histP,modP){
+  var items=[];
+  items.push({pr:"alta",tag:"pr-alta",t:"Refazer "+worst.label.toLowerCase(),
+    d:"Menor satisfação da jornada ("+worst.avg.toFixed(1)+"/5) e topo do ranking de prioridade. É o ponto de maior alívio percebido.",
+    link:worst.id==="medicamento"?"↳ MEVO-5069 · Posologia estruturada":worst.id==="controlado"?"↳ MEVO-5071 · Receituário controlado":""});
+  items.push({pr:"alta",tag:"pr-alta",t:"IA em "+(stLabel[iaTop]||iaTop).toLowerCase(),
+    d:pct(iaCount[iaTop]||0,N)+"% pediram IA justamente aqui. Comece pela dor mais votada, com o médico sempre revisando — respeitando os guarda-corpos citados.",
+    link:"↳ IA embarcada · fase 1"});
+  items.push({pr:"media",tag:"pr-media",t:"Ativar o MevoShop, não reinventá-lo",
+    d:"O gap acreditar×indicar é de "+gap+"pp. Ganho rápido em ativação: tornar o benefício visível no momento da prescrição.",
+    link:"↳ Banner MevoShop no fluxo"});
+  items.push({pr:"media",tag:"pr-media",t:(histP>=modP?"Histórico do paciente na renovação":"Modelos mais flexíveis"),
+    d:(histP>=modP? histP+"% se apoiam no histórico para renovar. Torná-lo visível e reaproveitável encurta a repetição.":modP+"% se apoiam nos modelos salvos."),
+    link:"↳ MEVO-5077 · Reestruturação de Modelos"});
+  items.push({pr:"exp",tag:"pr-exp",t:"Ouvir o vale, não só o pico",
+    d:"Etapas de satisfação média escondem detratores. Vale um follow-up qualitativo com quem deu nota baixa por especialidade.",
+    link:"↳ Pesquisa de aprofundamento"});
+  $("#backlog").innerHTML=items.map(function(o){
+    return '<div class="oppcard"><span class="pr '+o.tag+'">'+(o.pr==="alta"?"Prioridade alta":o.pr==="media"?"Ganho rápido":"Explorar")+'</span>'+
+      '<h4>'+o.t+'</h4><p>'+o.d+'</p>'+(o.link?'<span class="link">'+o.link+'</span>':'')+'</div>';
+  }).join("");
+}
+
+/* ---------- sessões (pills) ---------- */
+function buildSessionPills(){
+  var box=$("#sessFilters");
+  box.querySelectorAll(".pill").forEach(function(p){p.remove()});
+  SESSOES.forEach(function(s){
+    var b=document.createElement("button");
+    b.type="button";
+    b.className="pill"+(sessaoAtual&&sessaoAtual.id===s.id?" on":"");
+    b.textContent=s.nome;
+    b.onclick=function(){ sessaoAtual=s; buildSessionPills(); applySession(); };
+    box.appendChild(b);
+  });
+}
+
+/* ---------- filtros por especialidade ---------- */
+function buildFilters(base){
+  var esps=Object.keys(countBy(base,function(d){return d.especialidade})).sort();
+  var box=$("#filters");
+  box.querySelectorAll(".pill").forEach(function(p){p.remove()});
+  function mk(label,val){
+    var b=document.createElement("button");
+    b.type="button";
+    b.className="pill"+(val===null?" on":"");b.textContent=label;
+    b.onclick=function(){
+      box.querySelectorAll(".pill").forEach(function(p){p.classList.remove("on")});b.classList.add("on");
+      renderAll(val===null?base:base.filter(function(d){return d.especialidade===val}));
+    };
+    box.appendChild(b);
+  }
+  mk("Todas",null);
+  esps.slice(0,8).forEach(function(e){mk(e,e)});
+  $("#mEsp").textContent=esps.length;
+}
+
+/* ---------- aplica a sessão selecionada ---------- */
+function applySession(){
+  var mine=sessaoAtual?ALL_RAW.filter(function(d){return d.sessaoId===sessaoAtual.id}):ALL_RAW;
+  var demo=mine.length===0;
+  BASE=demo?sample():mine;
+  $("#demoNote").classList.toggle("show",demo);
+  buildFilters(BASE);
+  renderAll(BASE);
+}
+
+/* ---------- refresh ---------- */
+function stampAgora(){
+  $("#mData").textContent=new Date().toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"numeric"})
+    +" "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+}
+async function refresh(){
+  var btn=$("#btnRefresh");
+  btn.classList.add("busy");btn.textContent="↻ Atualizando…";
+  try{
+    await fetchTudo();
+    // mantém a sessão atual se ainda existir; senão volta à padrão
+    if(sessaoAtual) sessaoAtual=SESSOES.find(function(s){return s.id===sessaoAtual.id})||null;
+    if(!sessaoAtual) sessaoAtual=SESSOES.find(function(s){return s.padrao===true})||SESSOES[0]||null;
+    buildSessionPills();
+    applySession();
+    stampAgora();
+  }catch(e){
+    if(ALL_RAW.length===0){ BASE=sample(); buildFilters(BASE); renderAll(BASE); $("#demoNote").classList.add("show"); }
+  }finally{
+    btn.classList.remove("busy");btn.textContent="↻ Atualizar";
+  }
+}
+$("#btnRefresh").onclick=refresh;
+
+/* ---------- nova sessão ---------- */
+var modal=$("#modalBack"), inpNome=$("#novaSessNome"), errBox=$("#novaSessErr");
+$("#btnNovaSessao").onclick=function(){
+  inpNome.value="";errBox.textContent="";
+  modal.classList.add("show");
+  setTimeout(function(){inpNome.focus()},50);
+};
+$("#novaSessCancel").onclick=function(){modal.classList.remove("show")};
+modal.addEventListener("click",function(e){if(e.target===modal)modal.classList.remove("show")});
+$("#novaSessSave").onclick=async function(){
+  var nome=inpNome.value.trim();
+  if(nome.length<2||nome.length>60){errBox.textContent="O nome precisa ter entre 2 e 60 caracteres.";return}
+  var slug=slugify(nome);
+  if(!slug){errBox.textContent="Use letras ou números no nome.";return}
+  if(SESSOES.some(function(s){return s.slug===slug||s.nome.toLowerCase()===nome.toLowerCase()})){
+    errBox.textContent="Já existe uma sessão com esse nome.";return
+  }
+  var btn=this;btn.disabled=true;errBox.textContent="";
+  try{
+    var ref=doc(db,"sessoes",slug);
+    var existente=await getDoc(ref);
+    if(existente.exists()){errBox.textContent="Já existe uma sessão com esse nome.";return}
+    var nova={nome:nome,slug:slug,padrao:false,criadaEm:serverTimestamp()};
+    await setDoc(ref,nova);
+    SESSOES.push({id:slug,...nova});
+    sessaoAtual=SESSOES[SESSOES.length-1];
+    buildSessionPills();
+    applySession();
+    modal.classList.remove("show");
+  }catch(e){
+    errBox.textContent="Não foi possível salvar. Verifique a conexão e tente de novo.";
+  }finally{
+    btn.disabled=false;
+  }
+};
+
+/* ---------- foco por seção (fadeout do resto) ---------- */
+var sections=[].slice.call(document.querySelectorAll("section[data-focus]"));
+var navBtns=[].slice.call(document.querySelectorAll("#secnav button"));
+function setFocus(sec){
+  sections.forEach(function(s){s.classList.toggle("focada",s===sec)});
+  document.body.classList.toggle("focus-mode",!!sec);
+  navBtns.forEach(function(b){
+    var t=b.getAttribute("data-target");
+    b.classList.toggle("on", sec ? (t && sec.id===t) : t==="");
+  });
+  if(sec)sec.scrollIntoView({behavior:"smooth",block:"start"});
+}
+sections.forEach(function(sec){
+  sec.addEventListener("click",function(e){
+    if(e.target.closest("button,a,input"))return;
+    if(sec.classList.contains("focada")){setFocus(null);return}
+    setFocus(sec);
+  });
+});
+navBtns.forEach(function(b){
+  b.onclick=function(){
+    var t=b.getAttribute("data-target");
+    if(!t){setFocus(null);window.scrollTo({top:0,behavior:"smooth"});return}
+    setFocus(document.getElementById(t));
+  };
+});
+document.addEventListener("keydown",function(e){if(e.key==="Escape")setFocus(null)});
+
+/* ---------- boot ---------- */
+refresh();
+</script>
+</body>
+</html>

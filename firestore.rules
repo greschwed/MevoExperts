@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Sessões de pesquisa (Mevo Expert, Mevo Teste, criadas no painel)
+    match /sessoes/{sessaoId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['nome', 'slug', 'padrao', 'criadaEm'])
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() >= 2
+        && request.resource.data.nome.size() <= 60
+        && request.resource.data.slug is string
+        && request.resource.data.padrao is bool;
+      allow update, delete: if false;
+    }
+
+    // Respostas da pesquisa — apenas criação, nunca edição/remoção
+    match /respostas/{respostaId} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasOnly(['sessaoId', 'sessaoNome', 'pesquisa', 'criadaEm', 'respostas', 'jornada'])
+        && request.resource.data.sessaoId is string
+        && request.resource.data.sessaoNome is string
+        && request.resource.data.respostas is map
+        && request.resource.data.jornada is map;
+      allow update, delete: if false;
+    }
+  }
+}

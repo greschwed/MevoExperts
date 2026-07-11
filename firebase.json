@@ -1,0 +1,14 @@
+{
+  "hosting": {
+    "public": "public",
+    "cleanUrls": true,
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "redirects": [
+      { "source": "/", "destination": "/mevoexpert", "type": 302 }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
